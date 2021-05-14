@@ -4,3 +4,11 @@
 <ul>
   <li *ngFor="let user of users$ | async">{{ user.id }}: {{ user.name }}</li>
 </ul>
+
+<button (click)="fetchUsers()">Fetch</button>
+
+<button (click)="addUser()">Add</button>
+
+<button (click)="updateUser()">Update</button>
+
+<button (click)="deleteUser()">Delete</button>

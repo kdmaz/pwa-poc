@@ -13,6 +13,10 @@ export class AppComponent implements OnInit {
   constructor(private readonly userService: UserService) {}
 
   ngOnInit(): void {
+    this.fetchUsers();
+  }
+
+  fetchUsers(): void {
     this.userService.fetchUsers();
   }
 
