@@ -26,19 +26,5 @@
         ]
       }
     }
-  ],
-  "dataGroups": [
-    {
-      "name": "users",
-      "urls": [
-        "http://localhost:3000/api/users"
-      ],
-      "cacheConfig": {
-        "maxSize": 1,
-        "maxAge": "365d",
-        "timeout": "7s",
-        "strategy": "freshness"
-      }
-    }
   ]
 }
