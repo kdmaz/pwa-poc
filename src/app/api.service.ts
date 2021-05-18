@@ -1,7 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, timeout } from 'rxjs/operators';
+import { NgxIndexedDBService } from 'ngx-indexed-db';
+import { BehaviorSubject, EMPTY, Observable } from 'rxjs';
+import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { User, UserDto } from './user.interface';
 
 @Injectable({
@@ -10,6 +11,7 @@ import { User, UserDto } from './user.interface';
 export class UserService {
   private base = 'http://localhost:3000/api/users';
   private userSubject = new BehaviorSubject<User[]>([]);
+  private USER_STORE = 'UserStore';
 
   private users: User[] = [];
 
@@ -17,15 +19,17 @@ export class UserService {
     return this.userSubject.asObservable();
   }
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private readonly ngxIndexedService: NgxIndexedDBService) {}
 
   fetchUsers(): void {
     this.http.get<User[]>(this.base).pipe(
       timeout(5000),
-      catchError((e) => {
-        console.error(e);
-        return of([]);
-      })
+      catchError(() => {
+        this.getUsersFromDb();
+        return EMPTY;
+      }),
+      switchMap((users) => this.ngxIndexedService.clear(this.USER_STORE).pipe(map(() => users))),
+      switchMap((users) => this.ngxIndexedService.bulkAdd('UserStore', users).pipe(map(() => users)))
     ).subscribe((users) => {
       this.users = [ ...users ];
       this.userSubject.next(this.users);
@@ -33,7 +37,13 @@ export class UserService {
   }
 
   addUser(userDto: UserDto): void {
-    this.http.post<User>(this.base, { ...userDto }).subscribe(user => {
+    this.http.post<User>(this.base, { ...userDto }).pipe(
+      timeout(5000),
+      catchError(() => {
+
+        return EMPTY;
+      })
+    ).subscribe(user => {
       this.users.push(user);
       this.userSubject.next(this.users);
     });
@@ -55,6 +65,17 @@ export class UserService {
   deleteUser(id: number): void {
     this.http.delete<void>(`${this.base}/${id}`).subscribe(() => {
       this.users = this.users.filter((user) => user.id !== id);
+      this.userSubject.next(this.users);
+    });
+  }
+
+  private getUsersFromDb(): void {
+    this.ngxIndexedService.getAll<User>('UserStore').subscribe((users) => {
+      if (!users) {
+        console.log('no users in db');
+        return;
+      }
+      this.users = [ ...users ];
       this.userSubject.next(this.users);
     });
   }
