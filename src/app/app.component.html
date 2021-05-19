@@ -2,13 +2,15 @@
 <button (click)="getOnlineStatus()">get status</button>
 <h1>Users!</h1>
 <ul>
-  <li *ngFor="let user of users$ | async">{{ user.id }}: {{ user.name }}</li>
+  <li *ngFor="let user of users$ | async">
+    {{ user.id }}: {{ user.name }}
+    <span (click)="deleteUser(user.id)" style="cursor: pointer;">X</span>
+  </li>
 </ul>
 
 <button (click)="fetchUsers()">Fetch</button>
 
-<button (click)="addUser()">Add</button>
+<button (click)="addUser(name.value)">Add</button>
+<input #name placeholder="New User"/>
 
-<button (click)="updateUser()">Update</button>
-
-<button (click)="deleteUser()">Delete</button>
+<!-- <button (click)="updateUser()">Update</button> -->

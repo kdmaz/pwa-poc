@@ -18,9 +18,9 @@ export class AppComponent implements OnInit {
     this.userService.fetchUsers();
   }
 
-  addUser(): void {
+  addUser(name: string): void {
     this.userService.addUser({
-      name: 'Bobby'
+      name
     });
   }
 
@@ -30,8 +30,8 @@ export class AppComponent implements OnInit {
     }, 2);
   }
 
-  deleteUser(): void {
-    this.userService.deleteUser(2);
+  deleteUser(id: number | string): void {
+    this.userService.deleteUser(id);
   }
 
   getOnlineStatus(): void {

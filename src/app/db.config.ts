@@ -12,7 +12,23 @@ export const dbConfig: DBConfig = {
     storeSchema: [
       {
         name: 'name',
-        keypath: 'name',
+        keypath: '',
+        options: {
+          unique: false
+        }
+      }
+    ]
+  },
+  {
+    store: 'RequestStore',
+    storeConfig: {
+      keyPath: 'id',
+      autoIncrement: true
+    },
+    storeSchema: [
+      {
+        name: 'request',
+        keypath: '',
         options: {
           unique: false
         }

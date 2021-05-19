@@ -3,6 +3,6 @@ export interface UserDto {
 }
 
 export interface User {
-  id: number;
+  id: number | string;
   name: string;
 }
