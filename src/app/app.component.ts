@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { UserService } from './api.service';
+import { UserService } from './user.service';
 
 @Component({
   selector: 'app-root',
@@ -36,5 +36,9 @@ export class AppComponent implements OnInit {
 
   getOnlineStatus(): void {
     this.connectionStatus = navigator.onLine ? 'online' : 'offline';
+  }
+
+  sync(): void {
+    this.userService.sync();
   }
 }

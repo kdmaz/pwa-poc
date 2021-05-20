@@ -1,9 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
-import { BehaviorSubject, EMPTY, Observable } from 'rxjs';
+import { BehaviorSubject, EMPTY, forkJoin, Observable } from 'rxjs';
 import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
+import { RequestEntity } from './request.interface';
 import { User, UserDto } from './user.interface';
 
 @Injectable({
@@ -46,13 +47,13 @@ export class UserService {
 
   addUser(userDto: UserDto): void {
     const url = this.base;
-    const data = { ...userDto };
+    const body = { ...userDto };
     const newUser: User = { id: uuid(), name: userDto.name };
 
-    this.http.post<User>(url, data).pipe(
+    this.http.post<User>(url, body).pipe(
       timeout(this.TIMEOUT),
       catchError(() => {
-        this.storeRequest('POST', url, data);
+        this.storeRequest('POST', url, body);
         this.addUserToDb(newUser);
         return EMPTY;
       })
@@ -63,13 +64,13 @@ export class UserService {
 
   updateUser(userDto: UserDto, id: number): void {
     const url = `${this.base}/${id}`;
-    const data = { ...userDto };
+    const body = { ...userDto };
     const user: User = { id, name: userDto.name };
 
-    this.http.put<User>(url, data).pipe(
+    this.http.put<User>(url, body).pipe(
       timeout(this.TIMEOUT),
       catchError(() => {
-        this.storeRequest('PUT', url, data);
+        this.storeRequest('PUT', url, body, id);
         return EMPTY;
       })
     ).subscribe({
@@ -90,7 +91,7 @@ export class UserService {
     this.http.delete<void>(url).pipe(
       timeout(this.TIMEOUT),
       catchError(() => {
-        this.storeRequest('DELETE', url);
+        this.storeRequest('DELETE', url, id);
         return EMPTY;
       })
     ).subscribe({
@@ -101,7 +102,38 @@ export class UserService {
   }
 
   sync(): void {
+    if(!navigator.onLine) {
+      console.error('not online! Cannot sync data')
+      return;
+    }
 
+    this.ngxIndexedService.getAll<RequestEntity>('RequestStore').pipe(
+      map((requests) => {
+        return requests.map(({ httpMethod, body, url, id }) => {
+          return this.http.request<User>(httpMethod, url, { body }).pipe(
+            map((user) => {
+              return user.id;
+            }),
+            catchError((error) => {
+              console.error('request failed!', error);
+              return EMPTY;
+            }),
+          )
+        })
+      }),
+      switchMap((requests) => {
+        return forkJoin(requests);
+      }),
+      map((uids) => {
+        return uids.map(uid => this.ngxIndexedService.delete<RequestEntity>('RequestStore', uid))
+      }),
+      switchMap((dbRequests) => {
+        return forkJoin(dbRequests);
+      })
+    )
+    .subscribe(() => {
+      console.log('offline data sync complete!');
+    });
   }
 
   private getUsersFromDb(): void {
@@ -115,14 +147,15 @@ export class UserService {
     });
   }
 
-  private storeRequest(httpMethod: string, url: string, data = {}): void {
-    const request = {
+  private storeRequest(httpMethod: string, url: string, body = {}, id?: number | string): void {
+    const request: RequestEntity = {
+      id: id ?? uuid(),
       httpMethod,
       url,
-      data,
+      body,
       timestamp: Date.now()
     };
-    this.ngxIndexedService.add('RequestStore', request).subscribe(() => {
+    this.ngxIndexedService.add<RequestEntity>('RequestStore', request).subscribe(() => {
       console.log('Request stored!', request);
 
     });
