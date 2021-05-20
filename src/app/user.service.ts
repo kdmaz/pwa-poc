@@ -48,12 +48,13 @@ export class UserService {
   addUser(userDto: UserDto): void {
     const url = this.base;
     const body = { ...userDto };
-    const newUser: User = { id: uuid(), name: userDto.name };
+    const tempId = uuid();
+    const newUser: User = { id: tempId, name: userDto.name };
 
     this.http.post<User>(url, body).pipe(
       timeout(this.TIMEOUT),
       catchError(() => {
-        this.storeRequest('POST', url, body);
+        this.storeRequest('POST', url, tempId, body);
         this.addUserToDb(newUser);
         return EMPTY;
       })
@@ -70,7 +71,7 @@ export class UserService {
     this.http.put<User>(url, body).pipe(
       timeout(this.TIMEOUT),
       catchError(() => {
-        this.storeRequest('PUT', url, body, id);
+        this.storeRequest('PUT', url, id, body);
         return EMPTY;
       })
     ).subscribe({
@@ -102,8 +103,8 @@ export class UserService {
   }
 
   sync(): void {
-    if(!navigator.onLine) {
-      console.error('not online! Cannot sync data')
+    if (!navigator.onLine) {
+      console.error('not online! Cannot sync data');
       return;
     }
 
@@ -112,28 +113,40 @@ export class UserService {
         return requests.map(({ httpMethod, body, url, id }) => {
           return this.http.request<User>(httpMethod, url, { body }).pipe(
             map((user) => {
-              return user.id;
+              return { isPost: httpMethod === 'POST', oldId: id, user };
             }),
             catchError((error) => {
               console.error('request failed!', error);
               return EMPTY;
             }),
-          )
-        })
+          );
+        });
       }),
       switchMap((requests) => {
         return forkJoin(requests);
       }),
       map((uids) => {
-        return uids.map(uid => this.ngxIndexedService.delete<RequestEntity>('RequestStore', uid))
+        return uids.map(({ isPost, oldId, user }) => {
+          if (isPost) {
+            this.replaceNewUser(user, oldId);
+          }
+
+          return this.ngxIndexedService.delete<RequestEntity>('RequestStore', oldId);
+        });
       }),
       switchMap((dbRequests) => {
         return forkJoin(dbRequests);
       })
     )
     .subscribe(() => {
+      this.getUsersFromDb();
       console.log('offline data sync complete!');
     });
+  }
+
+  private replaceNewUser(newUser: User, oldId: string | number): void {
+    this.ngxIndexedService.add('UserStore', newUser).subscribe();
+    this.ngxIndexedService.delete('UserStore', oldId).subscribe();
   }
 
   private getUsersFromDb(): void {
@@ -147,9 +160,9 @@ export class UserService {
     });
   }
 
-  private storeRequest(httpMethod: string, url: string, body = {}, id?: number | string): void {
+  private storeRequest(httpMethod: string, url: string, id: number | string, body = {}): void {
     const request: RequestEntity = {
-      id: id ?? uuid(),
+      id,
       httpMethod,
       url,
       body,
