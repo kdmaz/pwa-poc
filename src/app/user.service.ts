@@ -192,6 +192,11 @@ export class UserService {
 
   private deleteUserInDb(id: number | string): void {
     this.ngxIndexedService.delete('UserStore', id).subscribe();
+
+    if (typeof id === 'string') {
+      this.ngxIndexedService.delete('RequestStore', id).subscribe();
+    }
+
     this.users = this.users.filter((user) => user.id !== id);
     this.userSubject.next(this.users);
   }
