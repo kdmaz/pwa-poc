@@ -175,17 +175,13 @@ export class UserService {
   }
 
   private addUserToDb(user: User): void {
-    this.ngxIndexedService.add('UserStore', user).subscribe(() => {
-      console.log('add success!');
-    });
+    this.ngxIndexedService.add('UserStore', user).subscribe();
     this.users.push(user);
     this.userSubject.next(this.users);
   }
 
   private updateUserInDb(user: User): void {
-    this.ngxIndexedService.update('UserStore', user).subscribe(() => {
-      console.log('update success!');
-    });
+    this.ngxIndexedService.update('UserStore', user).subscribe();
     const index = this.users.findIndex(u => u.id === user.id);
     if (index === -1) {
       throw new Error(`${user.id} not found!`);
@@ -195,9 +191,7 @@ export class UserService {
   }
 
   private deleteUserInDb(id: number | string): void {
-    this.ngxIndexedService.delete('UserStore', id).subscribe(() => {
-      console.log('delete success!');
-    });
+    this.ngxIndexedService.delete('UserStore', id).subscribe();
     this.users = this.users.filter((user) => user.id !== id);
     this.userSubject.next(this.users);
   }
