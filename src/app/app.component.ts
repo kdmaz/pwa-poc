@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { UserService } from './user.service';
 
 @Component({
@@ -10,6 +10,8 @@ export class AppComponent implements OnInit {
   connectionStatus = '';
   users$ = this.userService.users$;
 
+  @ViewChild('name') newName?: ElementRef;
+
   constructor(private readonly userService: UserService) {}
 
   ngOnInit(): void {}
@@ -18,10 +20,18 @@ export class AppComponent implements OnInit {
     this.userService.fetchUsers();
   }
 
-  addUser(name: string): void {
+  addUser(): void {
+    if (!this.newName) {
+      return;
+    }
+
+    const name = this.newName.nativeElement.value;
+    this.newName.nativeElement.value = '';
+
     this.userService.addUser({
       name
     });
+    this.newName.nativeElement.value = '';
   }
 
   updateUser(): void {

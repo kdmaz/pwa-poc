@@ -1,18 +1,38 @@
-<h1>Status: {{ connectionStatus }}</h1>
-<button (click)="getOnlineStatus()">get status</button>
-<h1>Users!</h1>
-<ul>
-  <li *ngFor="let user of users$ | async">
-    {{ user.id }}: {{ user.name }}
-    <span (click)="deleteUser(user.id)" style="cursor: pointer;">X</span>
-  </li>
-</ul>
+<div>
+  <button (click)="fetchUsers()">Fetch Users</button>
+</div>
 
-<button (click)="fetchUsers()">Fetch</button>
-
-<button (click)="addUser(name.value)">Add</button>
-<input #name placeholder="New User"/>
+<br />
 
 <!-- <button (click)="updateUser()">Update</button> -->
 
-<button (click)="sync()">Sync</button>
+<div>
+  <button (click)="sync()">Sync Data</button>
+</div>
+
+<br />
+
+<div>
+  <button (click)="getOnlineStatus()">Get Connection Status</button>
+  <h1 *ngIf="connectionStatus">Status: {{ connectionStatus }}</h1>
+</div>
+
+<br />
+
+<div>
+  <input #name placeholder="New User"/>
+  <button (click)="addUser()">Add User</button>
+</div>
+
+<br />
+
+<div *ngIf="(users$ | async)?.length">
+  <h1>Users!</h1>
+  <ul>
+    <li *ngFor="let user of users$ | async">
+      {{ user.id }}: {{ user.name }}
+      <span (click)="deleteUser(user.id)" style="cursor: pointer;">X</span>
+    </li>
+  </ul>
+</div>
+
