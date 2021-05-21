@@ -2,12 +2,14 @@
   height: 100vh;
   width: 100vw;
   padding: 20px;
+  display: flex;
+  justify-content: center;
 
   &--online {
-    border: 20px solid limegreen;
+    border: 30px solid limegreen;
   }
 
   &--offline {
-    border: 20px solid red;
+    border: 30px solid red;
   }
 }
