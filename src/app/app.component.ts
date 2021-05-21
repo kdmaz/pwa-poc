@@ -1,4 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { combineLatest } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { ConnectionStatusService } from './connection-status.service';
 import { UserService } from './user.service';
 
@@ -8,9 +10,21 @@ import { UserService } from './user.service';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
-  connectionStatus = '';
-  users$ = this.userService.users$;
-  isOnline$ = this.connectionStatusService.isOnline$;
+  private users$ = this.userService.users$;
+  private isOnline$ = this.connectionStatusService.isOnline$;
+  private hasPendingRequests$ = this.userService.hasPendingRequests$;
+
+  vm$ = combineLatest([
+    this.users$,
+    this.isOnline$,
+    this.hasPendingRequests$,
+  ]).pipe(
+    map(([users, isOnline, hasPendingRequests]) => ({
+      users,
+      isOnline,
+      hasPendingRequests,
+    }))
+  );
 
   @ViewChild('name') newName?: ElementRef;
 

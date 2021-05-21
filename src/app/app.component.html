@@ -1,12 +1,13 @@
 <div
+  *ngIf="vm$ | async as vm"
   class="app"
   [ngClass]="{
-    'app--online': isOnline$ | async,
-    'app--offline': !(isOnline$ | async)
+    'app--online': vm.isOnline,
+    'app--offline': !vm.isOnline
   }"
 >
-  <div style="margin-top: 30px">
-    <h1>{{ (isOnline$ | async) ? "Online" : "Offline" }}</h1>
+  <div style="margin-top: 30px; width: 300px">
+    <h1>{{ vm.isOnline ? "Online" : "Offline" }}</h1>
 
     <br />
 
@@ -18,7 +19,7 @@
 
     <!-- <button (click)="updateUser()">Update</button> -->
 
-    <div>
+    <div *ngIf="vm.hasPendingRequests && vm.isOnline">
       <button (click)="sync()">Sync Data</button>
     </div>
 
@@ -31,10 +32,10 @@
 
     <br />
 
-    <div *ngIf="(users$ | async)?.length">
+    <div *ngIf="vm.users?.length">
       <h1>Users!</h1>
       <ul>
-        <li *ngFor="let user of users$ | async">
+        <li *ngFor="let user of vm.users">
           {{ user.id }}: {{ user.name }}
           <span (click)="deleteUser(user.id)" style="cursor: pointer">X</span>
         </li>
