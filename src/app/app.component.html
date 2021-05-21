@@ -1,37 +1,39 @@
-<div>
-  <button (click)="fetchUsers()">Fetch Users</button>
-</div>
+<div class="app" [ngClass]="{
+  'app--online': isOnline$ | async,
+  'app--offline': !(isOnline$ | async)
+}">
+  <h1>{{ (isOnline$ | async) ? 'Online' : 'Offline' }}</h1>
 
-<br />
+  <br />
 
-<!-- <button (click)="updateUser()">Update</button> -->
+  <div>
+    <button (click)="fetchUsers()">Fetch Users</button>
+  </div>
 
-<div>
-  <button (click)="sync()">Sync Data</button>
-</div>
+  <br />
 
-<br />
+  <!-- <button (click)="updateUser()">Update</button> -->
 
-<div>
-  <button (click)="getOnlineStatus()">Get Connection Status</button>
-  <h1 *ngIf="connectionStatus">Status: {{ connectionStatus }}</h1>
-</div>
+  <div>
+    <button (click)="sync()">Sync Data</button>
+  </div>
 
-<br />
+  <br />
 
-<div>
-  <input #name placeholder="New User"/>
-  <button (click)="addUser()">Add User</button>
-</div>
+  <div>
+    <input #name placeholder="New User"/>
+    <button (click)="addUser()">Add User</button>
+  </div>
 
-<br />
+  <br />
 
-<div *ngIf="(users$ | async)?.length">
-  <h1>Users!</h1>
-  <ul>
-    <li *ngFor="let user of users$ | async">
-      {{ user.id }}: {{ user.name }}
-      <span (click)="deleteUser(user.id)" style="cursor: pointer;">X</span>
-    </li>
-  </ul>
+  <div *ngIf="(users$ | async)?.length">
+    <h1>Users!</h1>
+    <ul>
+      <li *ngFor="let user of users$ | async">
+        {{ user.id }}: {{ user.name }}
+        <span (click)="deleteUser(user.id)" style="cursor: pointer;">X</span>
+      </li>
+    </ul>
+  </div>
 </div>

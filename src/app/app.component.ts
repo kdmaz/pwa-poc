@@ -1,4 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { ConnectionStatusService } from './connection-status.service';
 import { UserService } from './user.service';
 
 @Component({
@@ -9,10 +10,11 @@ import { UserService } from './user.service';
 export class AppComponent implements OnInit {
   connectionStatus = '';
   users$ = this.userService.users$;
+  isOnline$ = this.connectionStatusService.isOnline$
 
   @ViewChild('name') newName?: ElementRef;
 
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService, private readonly connectionStatusService: ConnectionStatusService) {}
 
   ngOnInit(): void {}
 
@@ -42,10 +44,6 @@ export class AppComponent implements OnInit {
 
   deleteUser(id: number | string): void {
     this.userService.deleteUser(id);
-  }
-
-  getOnlineStatus(): void {
-    this.connectionStatus = navigator.onLine ? 'online' : 'offline';
   }
 
   sync(): void {
