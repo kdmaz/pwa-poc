@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { NgxIndexedDBService } from 'ngx-indexed-db';
 import { BehaviorSubject, EMPTY, forkJoin, Observable } from 'rxjs';
-import { catchError, map, switchMap, timeout } from 'rxjs/operators';
+import { catchError, map, switchMap, tap, timeout } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 import { RequestEntity } from './request.interface';
 import { User, UserDto } from './user.interface';
@@ -14,6 +14,7 @@ export class UserService {
   private base = 'http://localhost:3000/api/users';
   private userSubject = new BehaviorSubject<User[]>([]);
   private USER_STORE = 'UserStore';
+  private REQUEST_STORE = 'RequestStore';
   private TIMEOUT = 5000;
 
   private users: User[] = [];
@@ -32,21 +33,14 @@ export class UserService {
       .get<User[]>(this.base)
       .pipe(
         timeout(this.TIMEOUT),
-        catchError((e) => {
-          if (e.status === 504) {
+        catchError((error) => {
+          if (error.status === 504) {
             this.getUsersFromDb();
           }
           return EMPTY;
         }),
-        switchMap((users) => {
-          return this.ngxIndexedService
-            .clear(this.USER_STORE)
-            .pipe(map(() => users));
-        }),
-        switchMap((users) => {
-          return this.ngxIndexedService
-            .bulkAdd('UserStore', users)
-            .pipe(map(() => users));
+        tap((users) => {
+          this.replaceAllUsers(users);
         })
       )
       .subscribe((users) => {
@@ -65,9 +59,11 @@ export class UserService {
       .post<User>(url, body)
       .pipe(
         timeout(this.TIMEOUT),
-        catchError(() => {
-          this.storeRequest('POST', url, tempId, body);
-          this.addUserToDb(newUser);
+        catchError((error) => {
+          if (error.status === 504) {
+            this.storeRequest('POST', url, tempId, body);
+            this.addUserToDb(newUser);
+          }
           return EMPTY;
         })
       )
@@ -85,15 +81,16 @@ export class UserService {
       .put<User>(url, body)
       .pipe(
         timeout(this.TIMEOUT),
-        catchError(() => {
-          this.storeRequest('PUT', url, id, body);
+        catchError((error) => {
+          if (error.status === 504) {
+            this.storeRequest('PUT', url, id, body);
+            this.updateUserInDb(user);
+          }
           return EMPTY;
         })
       )
-      .subscribe({
-        complete: () => {
-          this.updateUserInDb(user);
-        },
+      .subscribe((user) => {
+        this.updateUserInDb(user);
       });
   }
 
@@ -109,15 +106,16 @@ export class UserService {
       .delete<void>(url)
       .pipe(
         timeout(this.TIMEOUT),
-        catchError(() => {
-          this.storeRequest('DELETE', url, id);
+        catchError((error) => {
+          if (error.status === 504) {
+            this.storeRequest('DELETE', url, id);
+            this.deleteUserInDb(id);
+          }
           return EMPTY;
         })
       )
-      .subscribe({
-        complete: () => {
-          this.deleteUserInDb(id);
-        },
+      .subscribe(() => {
+        this.deleteUserInDb(id);
       });
   }
 
@@ -128,7 +126,7 @@ export class UserService {
     }
 
     this.ngxIndexedService
-      .getAll<RequestEntity>('RequestStore')
+      .getAll<RequestEntity>(this.REQUEST_STORE)
       .pipe(
         map((requests) => {
           return requests.map(({ httpMethod, body, url, id }) => {
@@ -153,7 +151,7 @@ export class UserService {
             }
 
             return this.ngxIndexedService.delete<RequestEntity>(
-              'RequestStore',
+              this.REQUEST_STORE,
               oldId
             );
           });
@@ -169,12 +167,17 @@ export class UserService {
   }
 
   private replaceNewUser(newUser: User, oldId: string | number): void {
-    this.ngxIndexedService.add('UserStore', newUser).subscribe();
-    this.ngxIndexedService.delete('UserStore', oldId).subscribe();
+    this.ngxIndexedService.add(this.USER_STORE, newUser).subscribe();
+    this.ngxIndexedService.delete(this.USER_STORE, oldId).subscribe();
+  }
+
+  private replaceAllUsers(users: User[]): void {
+    this.ngxIndexedService.clear(this.USER_STORE);
+    this.ngxIndexedService.bulkAdd(this.USER_STORE, users);
   }
 
   private getUsersFromDb(): void {
-    this.ngxIndexedService.getAll<User>('UserStore').subscribe((users) => {
+    this.ngxIndexedService.getAll<User>(this.USER_STORE).subscribe((users) => {
       if (!users) {
         console.log('no users in db');
         return;
@@ -198,20 +201,20 @@ export class UserService {
       timestamp: Date.now(),
     };
     this.ngxIndexedService
-      .add<RequestEntity>('RequestStore', request)
+      .add<RequestEntity>(this.REQUEST_STORE, request)
       .subscribe(() => {
         console.log('Request stored!', request);
       });
   }
 
   private addUserToDb(user: User): void {
-    this.ngxIndexedService.add('UserStore', user).subscribe();
+    this.ngxIndexedService.add(this.USER_STORE, user).subscribe();
     this.users.push(user);
     this.userSubject.next(this.users);
   }
 
   private updateUserInDb(user: User): void {
-    this.ngxIndexedService.update('UserStore', user).subscribe();
+    this.ngxIndexedService.update(this.USER_STORE, user).subscribe();
     const index = this.users.findIndex((u) => u.id === user.id);
     if (index === -1) {
       throw new Error(`${user.id} not found!`);
@@ -221,10 +224,10 @@ export class UserService {
   }
 
   private deleteUserInDb(id: number | string): void {
-    this.ngxIndexedService.delete('UserStore', id).subscribe();
+    this.ngxIndexedService.delete(this.USER_STORE, id).subscribe();
 
     if (typeof id === 'string') {
-      this.ngxIndexedService.delete('RequestStore', id).subscribe();
+      this.ngxIndexedService.delete(this.REQUEST_STORE, id).subscribe();
     }
 
     this.users = this.users.filter((user) => user.id !== id);
