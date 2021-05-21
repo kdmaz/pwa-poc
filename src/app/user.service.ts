@@ -5,7 +5,7 @@ import { BehaviorSubject, EMPTY, forkJoin, Observable } from 'rxjs';
 import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 import { Id } from './id.type';
-import { RequestEntity } from './request.interface';
+import { PendingRequest } from './pending-request.interface';
 import { User, UserDto } from './user.interface';
 
 @Injectable({
@@ -17,8 +17,8 @@ export class UserService {
   private REQUEST_STORE = 'RequestStore';
   private TIMEOUT = 5000;
 
-  private pendingRequests: RequestEntity[] = [];
-  private pendingRequestsSubject = new BehaviorSubject<RequestEntity[]>([]);
+  private pendingRequests: PendingRequest[] = [];
+  private pendingRequestsSubject = new BehaviorSubject<PendingRequest[]>([]);
 
   private userSubject = new BehaviorSubject<User[]>([]);
   private users: User[] = [];
@@ -29,7 +29,7 @@ export class UserService {
   get hasPendingRequests$(): Observable<boolean> {
     return this.pendingRequests$.pipe(map((requests) => !!requests.length));
   }
-  get pendingRequests$(): Observable<RequestEntity[]> {
+  get pendingRequests$(): Observable<PendingRequest[]> {
     return this.pendingRequestsSubject.asObservable();
   }
 
@@ -38,10 +38,28 @@ export class UserService {
     private readonly ngxIndexedService: NgxIndexedDBService
   ) {
     this.ngxIndexedService
-      .getAll<RequestEntity>(this.REQUEST_STORE)
+      .getAll<PendingRequest>(this.REQUEST_STORE)
       .subscribe((pendingRequests) => {
         this.pendingRequests = [...pendingRequests];
         this.pendingRequestsSubject.next(pendingRequests);
+
+        if (!navigator.onLine) {
+          this.fetchFromDb();
+          return;
+        }
+
+        if (!this.pendingRequests.length) {
+          this.fetchUsers();
+          return;
+        }
+
+        const confirmSyncData = confirm('Do you want to sync your data?');
+        if (confirmSyncData) {
+          this.sync();
+          this.fetchUsers();
+        }
+
+        this.fetchFromDb();
       });
   }
 
@@ -58,6 +76,10 @@ export class UserService {
         })
       )
       .subscribe(this.addAllUsersToDbAndUi.bind(this));
+  }
+
+  fetchFromDb(): void {
+    this.getUsersInDbAndAddToUi();
   }
 
   addUser(userDto: UserDto): void {
@@ -132,7 +154,7 @@ export class UserService {
     }
 
     this.ngxIndexedService
-      .getAll<RequestEntity>(this.REQUEST_STORE)
+      .getAll<PendingRequest>(this.REQUEST_STORE)
       .pipe(
         switchMap((requests) => {
           const r = requests.map(({ httpMethod, body, url, id }) => {
@@ -221,7 +243,7 @@ export class UserService {
     id: Id,
     body = {}
   ): void {
-    const request: RequestEntity = {
+    const request: PendingRequest = {
       id,
       httpMethod,
       url,
@@ -229,7 +251,7 @@ export class UserService {
       timestamp: Date.now(),
     };
     this.ngxIndexedService
-      .add<RequestEntity>(this.REQUEST_STORE, request)
+      .add<PendingRequest>(this.REQUEST_STORE, request)
       .subscribe();
     this.addRequestInUi(request);
   }
@@ -261,7 +283,7 @@ export class UserService {
   }
 
   // Request UI
-  private addRequestInUi(request: RequestEntity): void {
+  private addRequestInUi(request: PendingRequest): void {
     this.pendingRequests.push(request);
     this.pendingRequestsSubject.next(this.pendingRequests);
   }

@@ -42,6 +42,10 @@ export class AppComponent implements OnInit {
     this.userService.fetchUsers();
   }
 
+  fetchFromDb(): void {
+    this.userService.fetchFromDb();
+  }
+
   addUser(): void {
     if (!this.newName) {
       return;
@@ -54,15 +58,6 @@ export class AppComponent implements OnInit {
       name,
     });
     this.newName.nativeElement.value = '';
-  }
-
-  updateUser(): void {
-    this.userService.updateUser(
-      {
-        name: 'Johnny',
-      },
-      2
-    );
   }
 
   deleteUser(id: number | string): void {

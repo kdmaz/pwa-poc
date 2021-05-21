@@ -1,6 +1,6 @@
 import { Id } from './id.type';
 
-export interface RequestEntity {
+export interface PendingRequest {
   id: Id;
   httpMethod: string;
   url: string;

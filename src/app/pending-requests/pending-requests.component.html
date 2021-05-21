@@ -1,0 +1,23 @@
+<div *ngIf="pendingRequests?.length" style="min-height: 200px; overflow: auto">
+  <h1>Pending Requests</h1>
+  <ul>
+    <li
+      *ngFor="let request of pendingRequests"
+      style="
+        background-color: crimson;
+        color: white;
+        margin-bottom: 15px;
+        padding: 5px;
+      "
+    >
+      <div>
+        {{ request.httpMethod }}
+      </div>
+      <div *ngIf="request.httpMethod !== 'POST'">ID: {{ request.id }}</div>
+      <div *ngIf="request.httpMethod !== 'DELETE'">
+        Data: {{ request.body | json }}
+      </div>
+      <div>Time: {{ request.timestamp | date: "medium" }}</div>
+    </li>
+  </ul>
+</div>

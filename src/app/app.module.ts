@@ -6,9 +6,11 @@ import { NgxIndexedDBModule } from 'ngx-indexed-db';
 import { environment } from '../environments/environment';
 import { AppComponent } from './app.component';
 import { dbConfig } from './db.config';
+import { PendingRequestsComponent } from './pending-requests/pending-requests.component';
+import { UsersComponent } from './users/users.component';
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [AppComponent, PendingRequestsComponent, UsersComponent],
   imports: [
     BrowserModule,
     ServiceWorkerModule.register('ngsw-worker.js', {

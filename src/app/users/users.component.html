@@ -1,0 +1,12 @@
+<div *ngIf="users?.length" style="min-height: 200px; overflow: auto">
+  <h1>Users!</h1>
+  <ul>
+    <li
+      *ngFor="let user of users"
+      style="width: 100%; display: flex; justify-content: space-between"
+    >
+      {{ user.name }}
+      <span (click)="deleteUser.emit(user.id)" style="cursor: pointer">X</span>
+    </li>
+  </ul>
+</div>
