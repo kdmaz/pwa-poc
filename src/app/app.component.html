@@ -6,33 +6,23 @@
     'app--offline': !vm.isOnline
   }"
 >
-  <div style="margin-top: 30px; width: 300px">
+  <div style="width: 300px; display: flex; flex-direction: column">
     <h1>{{ vm.isOnline ? "Online" : "Offline" }}</h1>
-
-    <br />
 
     <div>
       <button (click)="fetchUsers()">Fetch Users</button>
     </div>
 
-    <br />
-
-    <!-- <button (click)="updateUser()">Update</button> -->
-
     <div *ngIf="vm.hasPendingRequests && vm.isOnline">
       <button (click)="sync()">Sync Data</button>
     </div>
-
-    <br />
 
     <div>
       <input #name placeholder="New User" />
       <button (click)="addUser()">Add User</button>
     </div>
 
-    <br />
-
-    <div *ngIf="vm.users?.length">
+    <div *ngIf="vm.users?.length" style="min-height: 200px; overflow: auto">
       <h1>Users!</h1>
       <ul>
         <li
@@ -45,7 +35,10 @@
       </ul>
     </div>
 
-    <div *ngIf="vm.pendingRequests?.length">
+    <div
+      *ngIf="vm.pendingRequests?.length"
+      style="min-height: 200px; overflow: auto"
+    >
       <h1>Pending Requests</h1>
       <ul>
         <li
