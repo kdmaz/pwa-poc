@@ -2,12 +2,12 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ConnectionStatusService {
   private isOnlineSubject = new BehaviorSubject(navigator.onLine);
 
-  get isOnline$ (): Observable<boolean> {
+  get isOnline$(): Observable<boolean> {
     return this.isOnlineSubject.asObservable();
   }
 
@@ -18,6 +18,6 @@ export class ConnectionStatusService {
 
     window.addEventListener('offline', () => {
       this.isOnlineSubject.next(false);
-    })
+    });
   }
 }

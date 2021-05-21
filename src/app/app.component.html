@@ -1,9 +1,12 @@
-<div class="app" [ngClass]="{
-  'app--online': isOnline$ | async,
-  'app--offline': !(isOnline$ | async)
-}">
-  <div style="margin-top: 30px;">
-    <h1>{{ (isOnline$ | async) ? 'Online' : 'Offline' }}</h1>
+<div
+  class="app"
+  [ngClass]="{
+    'app--online': isOnline$ | async,
+    'app--offline': !(isOnline$ | async)
+  }"
+>
+  <div style="margin-top: 30px">
+    <h1>{{ (isOnline$ | async) ? "Online" : "Offline" }}</h1>
 
     <br />
 
@@ -22,7 +25,7 @@
     <br />
 
     <div>
-      <input #name placeholder="New User"/>
+      <input #name placeholder="New User" />
       <button (click)="addUser()">Add User</button>
     </div>
 
@@ -33,7 +36,7 @@
       <ul>
         <li *ngFor="let user of users$ | async">
           {{ user.id }}: {{ user.name }}
-          <span (click)="deleteUser(user.id)" style="cursor: pointer;">X</span>
+          <span (click)="deleteUser(user.id)" style="cursor: pointer">X</span>
         </li>
       </ul>
     </div>
