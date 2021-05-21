@@ -35,9 +35,36 @@
     <div *ngIf="vm.users?.length">
       <h1>Users!</h1>
       <ul>
-        <li *ngFor="let user of vm.users">
-          {{ user.id }}: {{ user.name }}
+        <li
+          *ngFor="let user of vm.users"
+          style="width: 100%; display: flex; justify-content: space-between"
+        >
+          {{ user.name }}
           <span (click)="deleteUser(user.id)" style="cursor: pointer">X</span>
+        </li>
+      </ul>
+    </div>
+
+    <div *ngIf="vm.pendingRequests?.length">
+      <h1>Pending Requests</h1>
+      <ul>
+        <li
+          *ngFor="let request of vm.pendingRequests"
+          style="
+            background-color: crimson;
+            color: white;
+            margin-bottom: 15px;
+            padding: 5px;
+          "
+        >
+          <div>
+            {{ request.httpMethod }}
+          </div>
+          <div *ngIf="request.httpMethod !== 'POST'">ID: {{ request.id }}</div>
+          <div *ngIf="request.httpMethod !== 'DELETE'">
+            Data: {{ request.body | json }}
+          </div>
+          <div>Time: {{ request.timestamp | date: "medium" }}</div>
         </li>
       </ul>
     </div>

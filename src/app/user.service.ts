@@ -4,6 +4,7 @@ import { NgxIndexedDBService } from 'ngx-indexed-db';
 import { BehaviorSubject, EMPTY, forkJoin, Observable } from 'rxjs';
 import { catchError, map, switchMap, timeout } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
+import { Id } from './id.type';
 import { RequestEntity } from './request.interface';
 import { User, UserDto } from './user.interface';
 
@@ -28,7 +29,7 @@ export class UserService {
   get hasPendingRequests$(): Observable<boolean> {
     return this.pendingRequests$.pipe(map((requests) => !!requests.length));
   }
-  private get pendingRequests$(): Observable<RequestEntity[]> {
+  get pendingRequests$(): Observable<RequestEntity[]> {
     return this.pendingRequestsSubject.asObservable();
   }
 
@@ -56,10 +57,7 @@ export class UserService {
           return EMPTY;
         })
       )
-      .subscribe((usersFromApi) => {
-        this.addAllUsersInDb(usersFromApi);
-        this.addAllUsersInUi(usersFromApi);
-      });
+      .subscribe(this.addAllUsersToDbAndUi.bind(this));
   }
 
   addUser(userDto: UserDto): void {
@@ -67,10 +65,6 @@ export class UserService {
     const body = { ...userDto };
     const tempId = uuid();
     const newUser: User = { id: tempId, name: userDto.name };
-    const addUser = (user: User) => {
-      this.addUserInDb(user);
-      this.addUserInUi(user);
-    };
 
     this.http
       .post<User>(url, body)
@@ -79,23 +73,18 @@ export class UserService {
         catchError((error) => {
           if (error.status === 504) {
             this.storeRequestInDbAndAddToUi('POST', url, tempId, body);
-
-            addUser(newUser);
+            this.addUserToDbAndUi(newUser);
           }
           return EMPTY;
         })
       )
-      .subscribe(addUser);
+      .subscribe(this.addUserToDbAndUi.bind(this));
   }
 
-  updateUser(userDto: UserDto, id: number): void {
+  updateUser(userDto: UserDto, id: Id): void {
     const url = `${this.base}/${id}`;
     const body = { ...userDto };
     const user: User = { id, name: userDto.name };
-    const updateUser = (user: User) => {
-      this.updateUserInDb(user);
-      this.updateUserInUi(user);
-    };
 
     this.http
       .put<User>(url, body)
@@ -104,25 +93,20 @@ export class UserService {
         catchError((error) => {
           if (error.status === 504) {
             this.storeRequestInDbAndAddToUi('PUT', url, id, body);
-            updateUser(user);
+            this.updateUserToDbAndUi(user);
           }
           return EMPTY;
         })
       )
-      .subscribe(updateUser);
+      .subscribe(this.updateUserToDbAndUi.bind(this));
   }
 
-  deleteUser(id: number | string): void {
+  deleteUser(id: Id): void {
     const url = `${this.base}/${id}`;
-    const deleteUser = (id: number | string) => {
-      this.deleteUserInDb(id);
-      this.deleteUserInUi(id);
-    };
 
     if (typeof id === 'string') {
-      deleteUser(id);
-      this.deleteRequest(id);
-      this.deleteRequestInUi(id);
+      this.deleteUserInDbAndUi(id);
+      this.deleteRequestInDbAndUi(id);
       return;
     }
 
@@ -133,12 +117,12 @@ export class UserService {
         catchError((error) => {
           if (error.status === 504) {
             this.storeRequestInDbAndAddToUi('DELETE', url, id);
-            deleteUser(id);
+            this.deleteUserInDbAndUi(id);
           }
           return EMPTY;
         })
       )
-      .subscribe(() => deleteUser(id));
+      .subscribe(() => this.deleteUserInDbAndUi(id));
   }
 
   sync(): void {
@@ -168,16 +152,38 @@ export class UserService {
       .subscribe((requests) => {
         requests.map(({ isPost, oldId, user }) => {
           if (isPost) {
-            this.addUserInDb(user);
-            this.deleteUserInDb(oldId);
-            this.addUserInUi(user);
-            this.deleteUserInUi(oldId);
+            this.addUserToDbAndUi(user);
+            this.deleteUserInDbAndUi(oldId);
           }
 
-          this.deleteRequest(oldId);
-          this.deleteRequestInUi(oldId);
+          this.deleteRequestInDbAndUi(oldId);
         });
       });
+  }
+
+  private addAllUsersToDbAndUi(users: User[]): void {
+    this.addAllUsersInDb(users);
+    this.addAllUsersInUi(users);
+  }
+
+  private addUserToDbAndUi(user: User): void {
+    this.addUserInDb(user);
+    this.addUserInUi(user);
+  }
+
+  private updateUserToDbAndUi(user: User): void {
+    this.updateUserInDb(user);
+    this.updateUserInUi(user);
+  }
+
+  private deleteUserInDbAndUi(id: Id): void {
+    this.deleteUserInDb(id);
+    this.deleteUserInUi(id);
+  }
+
+  private deleteRequestInDbAndUi(id: Id): void {
+    this.deleteRequestInDb(id);
+    this.deleteRequestInUi(id);
   }
 
   // User Store DB
@@ -204,7 +210,7 @@ export class UserService {
     this.ngxIndexedService.update(this.USER_STORE, user).subscribe();
   }
 
-  private deleteUserInDb(id: number | string): void {
+  private deleteUserInDb(id: Id): void {
     this.ngxIndexedService.delete(this.USER_STORE, id).subscribe();
   }
 
@@ -212,7 +218,7 @@ export class UserService {
   private storeRequestInDbAndAddToUi(
     httpMethod: string,
     url: string,
-    id: number | string,
+    id: Id,
     body = {}
   ): void {
     const request: RequestEntity = {
@@ -228,7 +234,7 @@ export class UserService {
     this.addRequestInUi(request);
   }
 
-  private deleteRequest(id: number | string): void {
+  private deleteRequestInDb(id: Id): void {
     this.ngxIndexedService.delete(this.REQUEST_STORE, id).subscribe();
   }
 
@@ -243,13 +249,13 @@ export class UserService {
     this.userSubject.next(this.users);
   }
 
-  private updateUserInUi(user: User, id?: string | number): void {
+  private updateUserInUi(user: User, id?: Id): void {
     const index = this.findUserIndexById(id ?? user.id);
     this.users[index] = user;
     this.userSubject.next(this.users);
   }
 
-  private deleteUserInUi(id: number | string): void {
+  private deleteUserInUi(id: Id): void {
     this.users = this.users.filter((user) => user.id !== id);
     this.userSubject.next(this.users);
   }
@@ -260,7 +266,7 @@ export class UserService {
     this.pendingRequestsSubject.next(this.pendingRequests);
   }
 
-  private deleteRequestInUi(id: number | string): void {
+  private deleteRequestInUi(id: Id): void {
     this.pendingRequests = this.pendingRequests.filter(
       (request) => request.id !== id
     );
@@ -268,7 +274,7 @@ export class UserService {
   }
 
   // Helpers
-  private findUserIndexById(id: number | string): number {
+  private findUserIndexById(id: Id): number {
     const index = this.users.findIndex((user) => user.id === id);
     if (index === -1) {
       throw new Error(`${id} not found in users UI list`);

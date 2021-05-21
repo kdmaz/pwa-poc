@@ -1,5 +1,7 @@
+import { Id } from './id.type';
+
 export interface RequestEntity {
-  id: string | number;
+  id: Id;
   httpMethod: string;
   url: string;
   body: any;

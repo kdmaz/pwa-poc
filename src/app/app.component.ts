@@ -13,16 +13,19 @@ export class AppComponent implements OnInit {
   private users$ = this.userService.users$;
   private isOnline$ = this.connectionStatusService.isOnline$;
   private hasPendingRequests$ = this.userService.hasPendingRequests$;
+  private pendingRequests$ = this.userService.pendingRequests$;
 
   vm$ = combineLatest([
     this.users$,
     this.isOnline$,
     this.hasPendingRequests$,
+    this.pendingRequests$,
   ]).pipe(
-    map(([users, isOnline, hasPendingRequests]) => ({
+    map(([users, isOnline, hasPendingRequests, pendingRequests]) => ({
       users,
       isOnline,
       hasPendingRequests,
+      pendingRequests,
     }))
   );
 
