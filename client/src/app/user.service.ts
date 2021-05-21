@@ -157,18 +157,20 @@ export class UserService {
       .getAll<PendingRequest>(this.REQUEST_STORE)
       .pipe(
         switchMap((requests) => {
-          const r = requests.map(({ httpMethod, body, url, id }) => {
-            return this.http.request<User>(httpMethod, url, { body }).pipe(
-              map((user) => {
-                return { isPost: httpMethod === 'POST', oldId: id, user };
-              }),
-              catchError((error) => {
-                console.error('Get all users failed!', error);
-                return EMPTY;
-              })
-            );
-          });
-          return forkJoin(r);
+          const pendingRequests = requests.map(
+            ({ httpMethod, body, url, id }) => {
+              return this.http.request<User>(httpMethod, url, { body }).pipe(
+                map((user) => {
+                  return { isPost: httpMethod === 'POST', oldId: id, user };
+                }),
+                catchError((error) => {
+                  console.error('Get all users failed!', error);
+                  return EMPTY;
+                })
+              );
+            }
+          );
+          return forkJoin(pendingRequests);
         })
       )
       .subscribe((requests) => {
