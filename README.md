@@ -2,10 +2,11 @@
 
 ## Server
 
-To run the server, navigate to the `/server` directory and run the following command
+To run the server, navigate to the `/server` directory and run the following commands:
 
 ```
-npm i && npm start
+npm i
+npm start
 ```
 
 ## Client
@@ -13,9 +14,10 @@ npm i && npm start
 To run the client, navigate to the `/client` directory and run the following commands:
 
 ```
-npm i && npm run pwa
+npm i
+npm run pwa
 ```
 
 ## Browser
 
-Navigate to `http://localhost:4200` in an igonito window
+Navigate to `http://localhost:4200` in an igonito window (this is to remove any sort of caching)
